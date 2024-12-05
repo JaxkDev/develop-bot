@@ -1,0 +1,8 @@
+version: '3.5'
+services:
+  develop-bot:
+    build: .
+    volumes:
+      - ./data:/home/node/app/data
+    container_name: develop-bot
+    restart: 'always'

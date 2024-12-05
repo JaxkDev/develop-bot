@@ -1,0 +1,28 @@
+{
+  "name": "develop-bot",
+  "version": "1.0.0",
+  "description": "Develop a Torn City Faction, now has its own discord bot!",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JaxkDev/develop-bot.git"
+  },
+  "author": "Jack <JaxkDev@gmail.com>",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/JaxkDev/develop-bot/issues"
+  },
+  "homepage": "https://github.com/JaxkDev/develop-bot#readme",
+  "dependencies": {
+    "bufferutil": "^4.0.8",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7",
+    "node-schedule": "^2.1.1",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
+  }
+}
