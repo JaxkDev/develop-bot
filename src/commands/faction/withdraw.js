@@ -38,8 +38,8 @@ module.exports = {
         if (interaction.options.getInteger('amount') && interaction.options.getBoolean('all')) {
             return await interaction.editReply({ content: 'You cannot provide both an amount and use the `all` option.', ephemeral: true });
         }
-        
-        // TODO Link discord user to Torn user
+
+        // TODO Link discord user to Torn user, then check their faction and bank balance.
 
         // Send an embed to a channel for approval
         const exampleEmbed = new EmbedBuilder()

@@ -15,7 +15,7 @@ module.exports = {
         //check if process.env.version exists if not set it to the package.json version
         if (!process.env.version) {
             process.env.version = require('../../../package.json').version;
-            if (getConfig().debug) {
+            if (getConfig().debug || process.env.ENVIRONMENT === 'dev') {
                 process.env.version += '+dev[' + require('child_process').execSync('git rev-parse --short HEAD').toString().trim() + ']';
             }
             logger.debug('Version not found in environment variables, setting it to ' + process.env.version);
