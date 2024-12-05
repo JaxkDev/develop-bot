@@ -1,4 +1,10 @@
 {
     "debug": true,
-    "maintenance": false
+    "maintenance": true,
+
+    "owner_id": "282819886198030336",
+
+    "client_id": "1313962952692596837",
+    "guild_id": "1313963584450986134",
+
 }

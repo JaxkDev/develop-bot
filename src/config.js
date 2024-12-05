@@ -7,8 +7,6 @@ const loadConfig = function(){
     try {
         const data = fs.readFileSync('data/config.json', 'utf8')
         config = JSON.parse(data)
-        console.log('Config loaded successfully')
-        console.log(config)
     } catch (err) {
         throw new Error('Error reading config file: ' + err)
     }
