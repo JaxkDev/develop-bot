@@ -1,0 +1,5 @@
+{
+    "javascript.format.semicolons": "insert",
+    "js/ts.implicitProjectConfig.target": "ES5",
+    "javascript.suggestionActions.enabled": false,
+}
