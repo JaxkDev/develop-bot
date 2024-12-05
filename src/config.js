@@ -5,7 +5,7 @@ let config = {}
 // Read the config file and parse json.
 const loadConfig = function(){
     try {
-        const data = fs.readFileSync('data/config.json', 'utf8')
+        const data = fs.readFileSync(process.env.ENVIRONMENT == "prod" ? 'data/config.json' : 'data/config.dev.json', 'utf8')
         config = JSON.parse(data)
     } catch (err) {
         throw new Error('Error reading config file: ' + err)

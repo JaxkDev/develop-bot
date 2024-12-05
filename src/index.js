@@ -1,10 +1,11 @@
 require('dotenv').config({ path: 'data/.env' });
+process.env.ENVIRONMENT = process.env.ENVIRONMENT || 'dev';
 
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 const { getConfig } = require('./config');
 const { logger } = require('./logger');
 
-logger.info('Starting application...');
+logger.info(`Starting application [${process.env.ENVIRONMENT}]...`);
 
 const client = new Client({
     intents: Object.keys(GatewayIntentBits).map((a)=>{
@@ -49,9 +50,9 @@ client.on(Events.InteractionCreate, async interaction => {
 	} catch (error) {
 		console.error(error);
 		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral });
+			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
 		} else {
-			await interaction.reply({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral });
+			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
 		}
 	}
 });

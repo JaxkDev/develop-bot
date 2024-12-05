@@ -22,5 +22,7 @@ COPY --chown=node:node . .
 # Expose port
 # EXPOSE 80
 
+ENV ENVIRONMENT=prod
+
 # Start the application
 CMD ["npm", "start"]
