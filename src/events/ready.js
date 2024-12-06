@@ -12,6 +12,6 @@ module.exports = {
             process.exit(1);
         }
         logger.info(`Bot (${bot.user.tag}) is ready.`);
-        client.user.setPresence({ activities: [{ name: 'in Torn City' }], status: 'dnd' });
+        client.user.setPresence({ activities: [{ name: 'in Torn City' }], status: process.env.ENVIRONMENT === "prod" ? 'online' : 'dnd' });
 	},
 };
