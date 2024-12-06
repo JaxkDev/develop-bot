@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, userMention, roleMention, spoiler, bold} = require('discord.js');
 const { getConfig } = require('../../config');
-const { log } = require('winston');
 const logger = require('../../logger');
 
 module.exports = {
