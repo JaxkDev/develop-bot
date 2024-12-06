@@ -25,9 +25,21 @@ for (const command of commands) {
 // Load events
 for (const event of require('./events/loader')) {
 	if (event.once) {
-		client.once(event.name, async (...args) => await event.execute(client, ...args));
+		client.once(event.event, async function(...args){ 
+			try {
+				await event.handle(client, ...args)
+			} catch (error) {
+				logger.error(`Error executing event ${event.event}`, { error: error });
+			}
+		});
 	} else {
-		client.on(event.name, async (...args) => await event.execute(client, ...args));
+		client.on(event.event, async function(...args){
+			try {
+				await event.handle(client, ...args)
+			} catch (error) {
+				logger.error(`Error executing event ${event.event}`, { error: error });
+			}
+		});
 	}
 }
 logger.debug('Events registered.');
@@ -35,8 +47,14 @@ logger.debug('Events registered.');
 // Load scheduled jobs
 client.jobs = new Collection();
 for (const job of require('./jobs/loader')) {
-	//const j = schedule.scheduleJob(job.cron, async () => await job.execute(client));
-	//client.jobs.set(job.name, j);
+	const j = schedule.scheduleJob(job.cron, async function(){
+		try {
+			await job.execute(client)
+		} catch (error) {
+			logger.error(`Error executing job ${job.name}`, { error: error });
+		}
+	});
+	client.jobs.set(job.name, j);
 }
 logger.debug('Jobs scheduled with scheduler.');
 

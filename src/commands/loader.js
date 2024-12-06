@@ -1,7 +1,11 @@
 const fs = require("fs");
 const path = require("path");
 const logger = require('../logger');
+const { SlashCommandBuilder } = require("discord.js");
 
+/**
+ * @type {[{ data: SlashCommandBuilder, execute: Function }]}
+ */
 let commands = []
 
 const foldersPath = __dirname;

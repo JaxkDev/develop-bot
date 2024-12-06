@@ -1,1 +1,4 @@
 *.hash
+
+# All the cached api data etc.
+api/

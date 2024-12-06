@@ -2,13 +2,17 @@
     "debug": true,
     "maintenance": true,
 
+    "api": "https://api.torn.com/v2",
+
     "owner_id": "282819886198030336",
 
     "client_id": "1314532377158094888",
     "guild_id": "1313963584450986134",
 
     "channels": {
-        "bank": "1313963679632461857"
+        "bank": "1313963679632461857",
+
+        "attack-log": "1314585042500194356"
     },
 
     "roles": {

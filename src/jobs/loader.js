@@ -2,6 +2,9 @@ const fs = require("fs");
 const path = require("path");
 const logger = require('../logger');
 
+/**
+ * @type {[{ name: String, cron: String, execute: Function }]}
+ */
 let jobs = []
 
 const foldersPath = __dirname;
