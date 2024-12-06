@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, userMention} = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, userMention, roleMention, spoiler} = require('discord.js');
 const { getConfig } = require('../../config');
 
 module.exports = {
@@ -65,7 +65,7 @@ module.exports = {
             );
 
         // Send the embed to a channel for approval
-        await interaction.guild.channels.cache.get(getConfig().channels.bank).send({ embeds: [exampleEmbed] });
+        await interaction.guild.channels.cache.get(getConfig().channels.bank).send({ content: spoiler(roleMention(getConfig().roles.treasurer)), embeds: [exampleEmbed] });
 
 		await interaction.editReply({ content: 'Your request has been submitted.', ephemeral: true });
 	},
