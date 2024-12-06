@@ -64,7 +64,7 @@ module.exports = {
 			fs.writeFileSync('data/api/faction/meta.dat', JSON.stringify({ timestamp: timestamp }));
 
 			const attacks = data.attacks ?? [];
-			for (const attack of attacks) {
+			for (const attack of attacks.reverse()) {
 				const attackId = attack.id;
 				client.emit('torn-attack', attack);
 				logger.debug(`Faction attack data emitted for attack ID ${attackId}`);
