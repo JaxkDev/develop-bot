@@ -6,6 +6,16 @@ module.exports = {
 		.setName('withdraw')
 		.setDescription('Withdraw a specified amount of money or points from your faction bank.')
         .addStringOption(option =>
+            option.setName('when')
+                .setDescription('When should we send it to you?')
+                .setRequired(true)
+                .addChoices(
+                    { 'name': 'When Online', 'value': 'When Online' },
+                    { 'name': 'Anytime', 'value': 'Anytime' }
+                )
+            )
+        
+        .addStringOption(option =>
             option.setName('type')
                 .setDescription('The type of currency to withdraw.')
                 .setRequired(true)
@@ -51,6 +61,7 @@ module.exports = {
                 { name: 'User', value: interaction.user.tag + " (" + userMention(interaction.user.id) + ")", inline: false },
                 { name: 'Type', value: interaction.options.getString('type'), inline: true },
                 { name: 'Amount', value: interaction.options.getBoolean('all') ? 'All' : interaction.options.getInteger('amount').toString(), inline: true },
+                { name: 'When', value: interaction.options.getString('when'), inline: true },
             );
 
         // Send the embed to a channel for approval
