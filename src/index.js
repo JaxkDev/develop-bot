@@ -35,8 +35,8 @@ logger.debug('Events registered.');
 // Load scheduled jobs
 client.jobs = new Collection();
 for (const job of require('./jobs/loader')) {
-	const j = schedule.scheduleJob(job.cron, async () => await job.execute(client));
-	client.jobs.set(job.name, j);
+	//const j = schedule.scheduleJob(job.cron, async () => await job.execute(client));
+	//client.jobs.set(job.name, j);
 }
 logger.debug('Jobs scheduled with scheduler.');
 

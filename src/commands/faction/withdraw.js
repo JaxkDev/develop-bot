@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, userMention, roleMention, spoiler, bold} = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ComponentType, userMention, roleMention, spoiler, bold} = require('discord.js');
 const { getConfig } = require('../../config');
 const logger = require('../../logger');
 
@@ -75,11 +75,23 @@ module.exports = {
 			.setLabel('Rejected')
 			.setStyle(ButtonStyle.Danger);
 
+        const Reply = new ButtonBuilder()
+            .setCustomId('reply')
+            .setLabel('Reply when Online')
+            .setStyle(ButtonStyle.Secondary);
+
+        const buttonRow = new ActionRowBuilder()
+            .addComponents(Processed, Rejected);
+
+        if (interaction.options.getString('when') === 'When Online') {
+            buttonRow.addComponents(Reply);
+        }
+
         // Send the embed to a channel for approval
         const embed_msg = await interaction.guild.channels.cache.get(getConfig().channels.bank).send({
             content: spoiler(roleMention(getConfig().roles.treasurer)),
             embeds: [exampleEmbed],
-            components: [(new ActionRowBuilder().addComponents(Processed, Rejected))]
+            components: [buttonRow]
         });
 
         await interaction.reply({ content: 'Your request has been submitted.', ephemeral: true });
@@ -87,9 +99,9 @@ module.exports = {
         // filter by treasurer role id against member roles
         // const hasRole = interaction.member.roles.cache.some(role => role.id === getConfig().roles.treasurer);
         const collectionFilter = i => i.member.roles.cache.some(role => role.id === getConfig().roles.treasurer);
+        const collector = embed_msg.createMessageComponentCollector({ componentType: ComponentType.Button, filter: collectionFilter });
 
-        try {
-            const confirmation = await embed_msg.awaitMessageComponent( { filter: collectionFilter } );
+        collector.on('collect', async confirmation => {
             if (confirmation.customId === 'done') {
                 await embed_msg.edit({
                     embeds: [
@@ -124,9 +136,25 @@ module.exports = {
                     content: 'Request has been ' + bold('REJECTED'),
                     ephemeral: true
                 });
+            } else if (confirmation.customId === 'reply') {
+                // Send a message in this channel mentioning the user to reply when they are online.
+                
+                await confirmation.channel.send({
+                    content: userMention(interaction.user.id) + ', please reply to ' + userMention(confirmation.user.id) + ' when you are online to proceed with your bank withdrawal request.',
+                    components: []
+                })
+
+                await confirmation.reply({
+                    content: 'You have asked the user to reply when online.',
+                    ephemeral: true
+                });
+            } else {
+                await confirmation.reply({
+                    content: 'Invalid button clicked.',
+                    ephemeral: true
+                });
+                logger.error('Invalid button clicked on withdraw buttons.', { button: confirmation });
             }
-        } catch (e) {
-            logger.error("Received error on withdraw listener:", error=e);
-        }
+        });
 	},
 };
