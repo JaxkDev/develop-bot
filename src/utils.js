@@ -1,3 +1,7 @@
+/**
+ * @param {Number} uptime 
+ * @returns {String} Formatted uptime string
+ */
 function format_uptime(uptime){
     // Calculate days, hours, minutes, and seconds
     let days = Math.floor(uptime / (24 * 60 * 60));
@@ -22,6 +26,10 @@ function format_uptime(uptime){
         .join(' ');
 }
 
+/**
+ * @param {Number} bytes 
+ * @returns {String} Formatted bytes string
+ */
 function format_bytes(bytes){
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
     let i = 0;

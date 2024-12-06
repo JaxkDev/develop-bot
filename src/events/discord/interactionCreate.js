@@ -1,10 +1,15 @@
-const { Events } = require('discord.js');
+const { Events, Client } = require('discord.js');
 const { getConfig } = require('../../config');
 const logger = require('../../logger');
 
 module.exports = {
 	event: Events.InteractionCreate,
-	once: false, 
+	once: false,
+
+    /**
+     * @param {Client} client 
+     * @param {*} interaction
+     */
 	async handle(client, interaction) {
 		if (!interaction.isChatInputCommand()) return;
 

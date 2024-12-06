@@ -3,7 +3,7 @@ const fs = require('fs');
 let config = {}
 
 // Read the config file and parse json.
-const loadConfig = function(){
+function loadConfig(){
     try {
         const data = fs.readFileSync(process.env.ENVIRONMENT == "prod" ? 'data/config.json' : 'data/config.dev.json', 'utf8')
         config = JSON.parse(data)
@@ -12,7 +12,7 @@ const loadConfig = function(){
     }
 };
 
-const getConfig = function(){
+function getConfig(){
     // If the config object is empty, pre-load the config.
     if (Object.keys(config).length === 0){
         try{

@@ -42,6 +42,7 @@ const faction_selections = [
 module.exports = {
 	name: 'ApiFaction',
     cron: '*/30 * * * * *',
+
 	/**
 	 * @param {Client} client 
 	 */
