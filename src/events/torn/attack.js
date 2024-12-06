@@ -76,7 +76,7 @@ module.exports = {
                 { name: 'Result', value: attack.result, inline: true },
             )
             .setURL(`https://www.torn.com/loader.php?sid=attackLog&ID=${attack.code}`)
-            .setTimestamp(attack.ended * 1000);
+            .setTimestamp(attack.started * 1000);
 
         let attacker = bold("Someone");
         let defender = bold("Someone");
