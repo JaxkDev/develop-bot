@@ -1,7 +1,7 @@
 const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const { getConfig } = require('../../config');
 const { format_uptime, format_bytes } = require('../../utils');
-const { logger } = require('../../logger');
+const logger = require('../../logger');
 
 
 module.exports = {

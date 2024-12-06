@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node .",
-    "register-slash-commands": "node ./scripts/register-slash-commands.js",
+    "deploy-commands": "node ./scripts/deploy-commands.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
