@@ -25,25 +25,27 @@ module.exports = {
                 )
             )
 
-        .addIntegerOption(option =>
+        .addStringOption(option =>
             option.setName('amount')
                 .setDescription('The amount to withdraw.')
                 .setRequired(false)
-                .setMinValue(1)
-        )
+                .setMinLength(1)
+                .setMaxLength(10)
+            )
+
         .addBooleanOption(option =>
             option.setName('all')
                 .setDescription('Withdraw all of your available currency?')
                 .setRequired(false)
-        ),
+            ),
 
 	async execute(interaction) {
         // If neither amount nor all is provided, return an error
-        if (!interaction.options.getInteger('amount') && !interaction.options.getBoolean('all')) {
+        if (!interaction.options.getString('amount') && !interaction.options.getBoolean('all')) {
             return await interaction.editReply({ content: 'You must provide either an amount or use the `all` option.', ephemeral: true });
         }
         // If both amount and all are provided, return an error
-        if (interaction.options.getInteger('amount') && interaction.options.getBoolean('all')) {
+        if (interaction.options.getString('amount') && interaction.options.getBoolean('all')) {
             return await interaction.editReply({ content: 'You cannot provide both an amount and use the `all` option.', ephemeral: true });
         }
 
@@ -58,7 +60,7 @@ module.exports = {
             .addFields(
                 { name: 'User', value: interaction.user.tag + " (" + userMention(interaction.user.id) + ")", inline: false },
                 { name: 'Type', value: interaction.options.getString('type'), inline: true },
-                { name: 'Amount', value: interaction.options.getBoolean('all') ? 'All' : interaction.options.getInteger('amount').toString(), inline: true },
+                { name: 'Amount', value: interaction.options.getBoolean('all') ? 'All' : interaction.options.getString('amount'), inline: true },
                 { name: 'When', value: interaction.options.getString('when'), inline: true },
             );
 
