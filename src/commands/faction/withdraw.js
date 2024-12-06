@@ -38,8 +38,6 @@ module.exports = {
         ),
 
 	async execute(interaction) {
-        await interaction.reply("Processing your request...");
-
         // If neither amount nor all is provided, return an error
         if (!interaction.options.getInteger('amount') && !interaction.options.getBoolean('all')) {
             return await interaction.editReply({ content: 'You must provide either an amount or use the `all` option.', ephemeral: true });
