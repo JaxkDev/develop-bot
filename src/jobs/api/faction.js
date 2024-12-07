@@ -81,6 +81,11 @@ module.exports = {
 				if (process.env.ENVIRONMENT !== "prod") fs.writeFileSync(`data/api/faction/attacks/${attack.ended}-${attackId}.dat`, JSON.stringify(attack));
 			}
 
+			for (const member of data.members ?? []) {
+				// Check if the member is already in the cache
+				client.emit('torn-member', member);
+			}
+
 			if (process.env.ENVIRONMENT !== "prod" && attacks.length !== 0) {
 				fs.writeFileSync(`data/api/faction/raw/${timestamp}.json`, JSON.stringify(data));
 			}
