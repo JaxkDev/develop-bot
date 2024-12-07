@@ -38,10 +38,10 @@ const faction_selections = [
 	'reports'
 ]
 
-// Run this every 30s
+// Run this every 2s
 module.exports = {
 	name: 'ApiFaction',
-    cron: '*/30 * * * * *',
+    cron: '*/2 * * * * *',
 
 	/**
 	 * @param {Client} client 
@@ -52,7 +52,7 @@ module.exports = {
 		const meta = JSON.parse(fs.existsSync('data/api/faction/meta.dat') ? fs.readFileSync('data/api/faction/meta.dat', 'utf8') : '{}');
 		const lastTimestamp = meta.timestamp || 0;
 
-		const url = `${getConfig().api}/faction?key=${process.env.TORN_KEY}&from=${lastTimestamp}&selections=` + faction_selections.join(',');
+		const url = `${getConfig().api}/faction?key=${process.env.TORN_KEY}&from=${lastTimestamp+1}&selections=` + faction_selections.join(',');
 		axios.get(url)
 		.then(res => {
 			if(res.status !== 200) {
@@ -70,7 +70,7 @@ module.exports = {
 				client.emit('torn-attack', attack);
 				logger.debug(`Faction attack data emitted for attack ID ${attackId}`);
 				//logger.debug(`Faction attack data emitted for attack ID ${attackId}`);
-				//fs.writeFileSync(`data/api/faction/attacks-${attackId}.dat`, JSON.stringify(attack));
+				fs.writeFileSync(`data/api/faction/attacks/${attack.ended}-${attackId}.dat`, JSON.stringify(attack));
 				//logger.debug(`Faction attack data saved for attack ID ${attackId} to ${`data/api/faction/attacks-${attackId}.dat`}`);
 			}
 		})
