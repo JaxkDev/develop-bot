@@ -77,13 +77,12 @@ module.exports = {
 				// Check if the attack is already processed
 				client.emit('torn-attack', attack);
 				logger.debug(`Faction attack data emitted for attack ID ${attackId}`);
-				//logger.debug(`Faction attack data emitted for attack ID ${attackId}`);
-				//fs.writeFileSync(`data/api/faction/attacks/${attack.ended}-${attackId}.dat`, JSON.stringify(attack));
-				//logger.debug(`Faction attack data saved for attack ID ${attackId} to ${`data/api/faction/attacks-${attackId}.dat`}`);
+
+				if (process.env.ENVIRONMENT !== "prod") fs.writeFileSync(`data/api/faction/attacks/${attack.ended}-${attackId}.dat`, JSON.stringify(attack));
 			}
 
-			if (attacks.length !== 0) {
-				//fs.writeFileSync(`data/api/faction/raw/${timestamp}.json`, JSON.stringify(data));
+			if (process.env.ENVIRONMENT !== "prod" && attacks.length !== 0) {
+				fs.writeFileSync(`data/api/faction/raw/${timestamp}.json`, JSON.stringify(data));
 			}
 
 			// replace cache with new data

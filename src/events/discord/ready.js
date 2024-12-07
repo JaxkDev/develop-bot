@@ -1,5 +1,6 @@
-const { Events, Client } = require('discord.js');
+const { Events, Client, Collection } = require('discord.js');
 const { getConfig } = require('../../config');
+const schedule = require('node-schedule');
 const logger = require('../../logger');
 
 module.exports = {
@@ -19,5 +20,20 @@ module.exports = {
         }
         logger.info(`Bot (${bot.user.tag}) is ready.`);
         client.user.setPresence({ activities: [{ name: 'in Torn City' }], status: process.env.ENVIRONMENT === "prod" ? 'online' : 'dnd' });
+
+        
+        // Load scheduled jobs
+        client.jobs = new Collection();
+        for (const job of require('../../jobs/loader')) {
+            const j = schedule.scheduleJob(job.cron, async function(){
+                try {
+                    await job.execute(client)
+                } catch (error) {
+                    logger.error(`Error executing job ${job.name}`, { error: error });
+                }
+            });
+            client.jobs.set(job.name, j);
+        }
+        logger.debug('Jobs scheduled with scheduler.');
 	},
 };
