@@ -52,7 +52,7 @@ module.exports = {
 	 * @param {Client} client 
 	 */
 	async execute(client) {
-        logger.debug('Fetching faction data from Torn API');
+        //logger.debug('Fetching faction data from Torn API');
 		if (!fs.existsSync('data/api/faction')) fs.mkdirSync('data/api/faction', { recursive: true });
 		const meta = JSON.parse(fs.existsSync('data/api/faction/meta.dat') ? fs.readFileSync('data/api/faction/meta.dat', 'utf8') : '{}');
 		const lastTimestamp = meta.timestamp || 0;
