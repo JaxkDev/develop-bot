@@ -52,7 +52,6 @@ module.exports = {
 	 * @param {Client} client 
 	 */
 	async execute(client) {
-        //logger.debug('Fetching faction data from Torn API');
 		if (!fs.existsSync('data/api/faction')) fs.mkdirSync('data/api/faction', { recursive: true });
 		const meta = JSON.parse(fs.existsSync('data/api/faction/meta.dat') ? fs.readFileSync('data/api/faction/meta.dat', 'utf8') : '{}');
 		const lastTimestamp = meta.timestamp || 0;
@@ -70,11 +69,12 @@ module.exports = {
 			const attacks = data.attacks ?? [];
 			for (const attack of attacks.reverse()) {
 				const attackId = attack.id;
+				// Check if the attack is already processed
 				if (cache.attacks.includes(attackId)) {
 					logger.debug(`Faction attack data for attack ID ${attackId} is already processed.`);
 					continue;
 				}
-				// Check if the attack is already processed
+
 				client.emit('torn-attack', attack);
 				logger.debug(`Faction attack data emitted for attack ID ${attackId}`);
 
@@ -82,7 +82,6 @@ module.exports = {
 			}
 
 			for (const member of data.members ?? []) {
-				// Check if the member is already in the cache
 				client.emit('torn-member', member);
 			}
 

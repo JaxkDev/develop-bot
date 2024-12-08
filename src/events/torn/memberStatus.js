@@ -11,7 +11,7 @@ module.exports = {
     once: false,
 
     /**
-     * Handles the attacks event.
+     * Handles the member event.
      * 
      * @param {Client} client Discord client.
      * @param {{
@@ -45,7 +45,7 @@ module.exports = {
         if(channel === null) channel = client.channels.cache.get(config.channels['member-status-log']);
 
         if (!channel) {
-            logger.error('Membeer status logging channel not found - please check your config. (' + config.channels['member-status-log'] + ')');
+            logger.error('Member status logging channel not found - please check your config. (' + config.channels['member-status-log'] + ')');
             return;
         }
 
