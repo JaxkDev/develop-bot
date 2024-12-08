@@ -42,6 +42,7 @@ module.exports = {
      * @see https://www.torn.com/swagger/index.html#/Faction/get_faction_members Torn API - Faction Members
      */
 	async handle(client, member) {
+        return;
         if(channel === null) channel = client.channels.cache.get(config.channels['member-status-log']);
 
         if (!channel) {

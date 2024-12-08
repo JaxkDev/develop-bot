@@ -2,6 +2,8 @@ const { EmbedBuilder, Client, bold, hyperlink } = require('discord.js');
 const { getConfig } = require('../../config');
 const logger = require('../../logger');
 
+let channel = null;
+
 module.exports = {
 	event: 'torn-attack',
     once: false,
@@ -54,8 +56,9 @@ module.exports = {
      * @see https://www.torn.com/swagger/index.html#/Stable/get_faction_attacks Torn API - Attacks
      */
 	async handle(client, attack) {
+        return;
         const config = getConfig();
-        const channel = client.channels.cache.get(config.channels['attack-log']);
+        if(channel === null) channel = client.channels.cache.get(config.channels['attack-log']);
 
         if (!channel) {
             logger.error('Attack logging channel not found - please check your config. (' + config.channels['attack-log'] + ')');
