@@ -14,7 +14,7 @@ for (const filePath of get_all_js_files(__dirname)) {
 	// Set a new item in the Collection with the key as the job name and the value as the exported module
 	if ('name' in job && 'cron' in job && 'execute' in job) {
 		jobs.push(job);
-		logger.debug(`Scheduled Job '${job.name}' loaded.`, { path: filePath });
+		logger.debug(`Job '${job.name}' loaded.`, { path: filePath });
 	} else {
 		logger.error(`The scheduled job at ${filePath} is missing a required "name", "cron" or "execute" property.`);
 	}

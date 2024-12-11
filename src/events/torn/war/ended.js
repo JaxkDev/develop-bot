@@ -1,6 +1,6 @@
 const { EmbedBuilder, Client, bold, hyperlink, time} = require('discord.js');
 
-const { generateAllReports } = require('../../../scripts/reports/postWarReports');
+const generateReports = require('../../../scripts/reports/postWarReports');
 const { getConfig } = require('../../../config');
 const logger = require('../../../logger');
 
@@ -66,6 +66,6 @@ module.exports = {
         await channel.send({ embeds: [embed] });
 
         // Generate post-war reports.
-        generateAllReports(client, war, true);
+        generateReports(client, war, true);
 	},
 };
