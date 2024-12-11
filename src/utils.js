@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+
 /**
  * @param {Number} uptime 
  * @returns {String} Formatted uptime string
@@ -40,4 +43,26 @@ function format_bytes(bytes){
     return `${bytes.toFixed(2)}${units[i]}`;
 }
 
-module.exports = { format_uptime, format_bytes };
+/**
+ * 
+ * @param {String} directory Directory to resolve
+ * @param {Boolean} recursive Whether to search recursively
+ * @returns {[String]} Array of all .js files in the directory
+ */
+function get_all_js_files(directory, recursive = true) {
+    let jsFiles = [];
+    const entries = fs.readdirSync(directory, { withFileTypes: true });
+
+    for (const entry of entries) {
+        const entryPath = path.join(directory, entry.name);
+        if (entry.isDirectory() && recursive) {
+            jsFiles = jsFiles.concat(get_all_js_files(entryPath)); // Recurse into subfolder
+        } else if (entry.isFile() && entry.name.endsWith('.js')) {
+            jsFiles.push(entryPath);
+        }
+    }
+
+    return jsFiles;
+}
+
+module.exports = { format_uptime, format_bytes, get_all_js_files };

@@ -29,7 +29,7 @@ module.exports = {
                 try {
                     await job.execute(client)
                 } catch (error) {
-                    logger.error(`Error executing job ${job.name}`, { error: error });
+                    logger.error(`Error executing job ${job.name}`, { error: error.toString() });
                 }
             });
             client.jobs.set(job.name, j);

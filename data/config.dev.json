@@ -3,6 +3,7 @@
     "maintenance": true,
 
     "api": "https://api.torn.com/v2",
+    "faction": 51716,
 
     "owner_id": "282819886198030336",
 
@@ -14,7 +15,7 @@
 
         "attack-log": "1314585042500194356",
         "member-status-log": "1314925147123220480",
-        "war-log": "1314585042500194356"
+        "war-log": "1313963703728603217"
     },
 
     "roles": {

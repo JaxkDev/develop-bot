@@ -1,18 +1,12 @@
-require('dotenv').config({ path: 'data/.env' });
-const { REST, Routes } = require('discord.js');
-const { getConfig } = require('../src/config');
-const logger = require('../src/logger');
+const { getConfig } = require('../config');
+const config = getConfig();
+
+const logger = require('../logger');
 const fs = require('fs');
 const hash = require('object-hash');
-process.env.ENVIRONMENT = process.env.ENVIRONMENT || 'dev';
-
-let commands = [];
-for (const command of require('../src/commands/loader')) {
-    commands.push(command.data.toJSON());
-}
 
 //create file if it doesn't exist
-if (!fs.existsSync('data/slash-commands.hash')) { fs.writeFileSync('data/slash-commands.hash', '{}'); }
+if (!fs.existsSync('data/reports/')) { fs.writeFileSync('data/slash-commands.hash', '{}'); }
 
 hashes = JSON.parse(fs.readFileSync('data/slash-commands.hash', 'utf8').trim())
 old_hash = hashes[process.env.ENVIRONMENT] ?? '';
@@ -47,6 +41,6 @@ const rest = new REST().setToken(process.env.DISCORD_TOKEN);
 		logger.info(`Successfully reloaded ${data.length} application (/) commands.`);
 	} catch (error) {
 		// And of course, make sure you catch and log any errors!
-		logger.error(error);
+		logger.error("Error refreshing application commands", { error: error.toString() });
 	}
 })();

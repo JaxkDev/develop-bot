@@ -6,7 +6,7 @@ const logger = require('./logger');
 
 logger.info(`Starting application [${process.env.ENVIRONMENT}]...`);
 
-require('../scripts/deploy-commands');
+require('./scripts/deployCommands');
 
 const client = new Client({
     intents: Object.keys(GatewayIntentBits).map((a)=>{
@@ -28,7 +28,8 @@ for (const event of require('./events/loader')) {
 			try {
 				await event.handle(client, ...args)
 			} catch (error) {
-				logger.error(`Error executing event ${event.event}`, { error: error });
+				console.log(error);
+				logger.error(`Error executing event ${event.event}`, { error: error.toString() });
 			}
 		});
 	} else {
@@ -36,7 +37,8 @@ for (const event of require('./events/loader')) {
 			try {
 				await event.handle(client, ...args)
 			} catch (error) {
-				logger.error(`Error executing event ${event.event}`, { error: error });
+				console.log(error);
+				logger.error(`Error executing event ${event.event}`, { error: error.toString() });
 			}
 		});
 	}
