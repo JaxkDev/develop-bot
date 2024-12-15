@@ -1,5 +1,5 @@
 const { getConfig } = require('../../config');
-const { Client, userMention } = require('discord.js');
+const { Client, userMention, bold, underline } = require('discord.js');
 const logger = require('../../logger');
 const axios = require('axios');
 const fs = require('fs');
@@ -86,7 +86,144 @@ function getAllAttacks(client, start, end) {
 }
 
 /**
- * @name warLosses
+ * @name netReport
+ * @description Generates a report of net gains/losses.
+ * @param {Client} Discord client.
+ * @param {{
+*  "war_id": Number,
+*  "start": EpochTimeStamp,
+*  "end": EpochTimeStamp,
+*  "target": Number,
+*  "winner": Number,
+*  "factions": [{
+*      "id": Number,
+*      "name": String,
+*      "score": Number,
+*      "chain": Number
+*  },
+*  {
+*      "id": Number,
+*      "name": String,
+*      "score": Number,
+*      "chain": Number
+*  }]
+* }} war War data from the Torn API.
+* @param {[{
+*  "id": Number,
+*  "code": String,
+*  "started": EpochTimeStamp,
+*  "ended": EpochTimeStamp,
+*  "attacker": {
+*    "id": Number,
+*    "name": String,
+*    "level": Number,
+*    "faction": {
+*      "id": Number,
+*      "name": String
+*    }
+*  } | null,
+*  "defender": {
+*    "id": Number,
+*    "name": String,
+*    "level": Number,
+*    "faction": {
+*      "id": Number,
+*      "name": String
+*    }
+*  },
+*  "result": "None" | "Attacked" | "Mugged" | "Hospitalized" | "Arrested" | "Looted" | "Lost" | "Stalemate" | "Assist" | "Escape" | "Timeout" | "Special" | "Bounty" | "Interrupted",
+*  "respect_gain": Number,
+*  "respect_loss": Number,
+*  "chain": Number,
+*  "is_stealthed": Boolean,
+*  "is_raid": Boolean,
+*  "is_ranked_war": Boolean,
+*  "modifiers": {
+*    "fair_fight": Number,
+*    "war": Number,
+*    "retaliation": Number,
+*    "group": Number,
+*    "overseas": Number,
+*    "chain": Number,
+*    "warlord": Number
+*  }
+* }]} attacks Raw attack data from the war period.
+* @param {Boolean} [force=false] Whether to force overwrite existing reports for this war.
+*/
+function netReport(client, war, attacks, force=false) {
+    const config = getConfig();
+    const war_id = war['war_id'];
+
+    if (!force) {
+        // Check if the report already exists
+        if (fs.existsSync(`data/reports/wars/${war_id.toString()}/net_attacks.json`)) {
+            logger.warn('Net attacks report already exists for war ID ' + war_id.toString() + '.');
+            return;
+        }
+    }
+
+    // Filter out only ranked wars successful attacks.
+    let filtered = attacks.filter(
+        attack => attack['is_ranked_war'] === true && (attack['result'] === 'Attacked' || attack['result'] === 'Mugged' || attack['result'] === 'Hospitalized')
+    );
+
+    // Generate report
+    let report = {
+            "war_id": war_id,
+            "timestamps": {
+                "start": war['start'] * 1000,
+                "end": war['end'] * 1000,
+                "report_generated": Date.now()
+            },
+            "factions": war['factions'],
+            "members": {}
+    };
+
+    for (const attack of filtered) {
+        const member = attack['defender']['faction']['id'] === config['faction'] ? 'defender' : 'attacker';
+
+        if (!(attack[member]['id'] in report['members'])) {
+            report['members'][attack[member]['id']] = {
+                "name": attack['defender']['name'],
+                "level": attack['defender']['level'],
+                "attacks": 0,
+                "respect_we_gained": 0,
+                "losses": 0,
+                "respect_they_gained": 0,
+                "net_attacks": 0,
+                "net_respect_gained": 0,
+            };
+        }
+
+        if (member === 'defender') {
+            report['members'][attack[member]['id']]['losses'] += 1;
+            report['members'][attack[member]['id']]['respect_they_gained'] += attack['respect_gain'];
+        } else {
+            report['members'][attack[member]['id']]['attacks'] += 1;
+            report['members'][attack[member]['id']]['respect_we_gained'] += attack['respect_gain'];
+        }
+    }
+
+    // Round respect gained to 2 decimal places
+    for (const member in report['members']) {
+        report['members'][member]['respect_we_gained'] = Math.round(report['members'][member]['respect_we_gained'] * 100) / 100;
+        report['members'][member]['respect_they_gained'] = Math.round(report['members'][member]['respect_they_gained'] * 100) / 100;
+        report['members'][member]['net_respect_gained'] = Math.round((report['members'][member]['respect_we_gained'] - report['members'][member]['respect_they_gained']) * 100) / 100;
+        report['members'][member]['net_attacks'] = report['members'][member]['attacks'] - report['members'][member]['losses'];
+    }
+
+    // Save report to file
+    fs.writeFileSync(`data/reports/wars/${war_id.toString()}/net_report.json`, JSON.stringify(report, null, 2));
+    logger.info('Saved net attacks report to file for war ID ' + war_id.toString() + ' - data/reports/wars/' + war_id.toString() + '/net_report.json');
+
+    // Send report to Discord
+    const channel = client.channels.cache.get(config['channels']['war-log']);
+    if (channel) channel.send({ content: bold(underline('Net attacks report for war ID ' + war_id.toString())), files: [{ attachment: `data/reports/wars/${war_id.toString()}/net_report.json`, name: 'net_report.json' }] });
+    else logger.warn('Failed to send net attacks report for war ID ' + war_id.toString() + ' - channel not found.');
+}
+
+/**
+ * @name lossesReport
  * @description Generates a report of war losses by each member of the faction.
  * @param {Client} Discord client.
  * @param {{
@@ -150,7 +287,7 @@ function getAllAttacks(client, start, end) {
  * }]} attacks Raw attack data from the war period.
  * @param {Boolean} [force=false] Whether to force overwrite existing reports for this war.
 */
-function warLosses(client, war, attacks, force=false) {
+function lossesReport(client, war, attacks, force=false) {
     const config = getConfig();
     const war_id = war['war_id'];
 
@@ -230,7 +367,7 @@ function warLosses(client, war, attacks, force=false) {
 
     // Send report to Discord
     const channel = client.channels.cache.get(config['channels']['war-log']);
-    if (channel) channel.send({ content: 'War losses report for war ID ' + war_id.toString(), files: [{ attachment: `data/reports/wars/${war_id.toString()}/losses.json`, name: 'losses.json' }] });
+    if (channel) channel.send({ content: bold(underline('War losses report for war ID ' + war_id.toString())), files: [{ attachment: `data/reports/wars/${war_id.toString()}/losses.json`, name: 'losses.json' }] });
     else logger.warn('Failed to send war losses report for war ID ' + war_id.toString() + ' - channel not found.');
 }
 
@@ -287,14 +424,23 @@ async function generateAllReports(client, war, force=false) {
 
     // Generate war losses report
     try {
-        warLosses(client, war, attacks, force);
+        lossesReport(client, war, attacks, force);
     } catch(err) {
         logger.error('Failed to generate war losses report for war ID ' + war['war_id'], { error: err.toString() });
         const channel = client.channels.cache.get(config['channels']['war-log']);
         if (channel) channel.send({ content: 'Failed to generate war losses report for war ID ' + war['war_id'] + ' ' + userMention(config['owner_id']) + '.' });
     }
-    
-    // Other reports that require attack data.
+
+    // Generate net attacks report
+    try {
+        netReport(client, war, attacks, force);
+    } catch(err) {
+        logger.error('Failed to generate net attacks report for war ID ' + war['war_id'], { error: err.toString() });
+        const channel = client.channels.cache.get(config['channels']['war-log']);
+        if (channel) channel.send({ content: 'Failed to generate net attacks report for war ID ' + war['war_id'] + ' ' + userMention(config['owner_id']) + '.' });
+    }
+
+    // Other reports.
 }
 
 module.exports = generateAllReports;
