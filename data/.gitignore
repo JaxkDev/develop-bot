@@ -2,3 +2,7 @@
 
 # All the cached api data etc.
 api/
+logs/
+reports/
+cache/
+.env
