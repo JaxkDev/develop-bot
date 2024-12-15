@@ -180,12 +180,12 @@ function netReport(client, war, attacks, force=false) {
     };
 
     for (const attack of filtered) {
-        const member = attack['defender']['faction']['id'] === config['faction'] ? 'defender' : 'attacker';
+        const member = ((attack['defender']['faction']['id'] === config['faction']) ? 'defender' : 'attacker');
 
         if (!(attack[member]['id'] in report['members'])) {
             report['members'][attack[member]['id']] = {
-                "name": attack['defender']['name'],
-                "level": attack['defender']['level'],
+                "name": attack[member]['name'],
+                "level": attack[member]['level'],
                 "attacks": 0,
                 "respect_we_gained": 0,
                 "losses": 0,
