@@ -52,6 +52,6 @@ module.exports = {
             })
             .setTimestamp();
 
-        //await channel.send({ content: '||@everyone||', embeds: [embed] });
+        await channel.send({ content: '||@everyone||', embeds: [embed] });
 	},
 };

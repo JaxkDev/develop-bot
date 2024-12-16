@@ -63,7 +63,7 @@ module.exports = {
 	 * @param {Client} client 
 	 */
 	async execute(client) {
-		const lastTimestamp = cache.timestamp || 0;
+		const lastTimestamp = cache.timestamp;
 		axios.get(url + `&from=${lastTimestamp}`)
 		.then(res => {
 			if(res.status !== 200) {
@@ -102,7 +102,7 @@ module.exports = {
 			cache.attacks = attacks.map(attack => attack.id);
 
 			//// -- WARS -- ////
-			let war = data.wars.ranked ?? null;
+			let war = data.wars.ranked;
 			if (war !== null) {
 				const warId = war.war_id;
 
@@ -111,6 +111,7 @@ module.exports = {
 					client.emit('torn-war-chosen', war);
 					logger.debug(`Faction war chosen data emitted for war ID ${warId}`);
 				} else if (war.start > lastTimestamp && war.start <= timestamp) {
+					logger.warn("debug data here", {war, lastTimestamp, timestamp});
 					client.emit('torn-war-start', war);
 					logger.debug(`Faction war start data emitted for war ID ${warId}`);
 				} else if (cache.war.end !== war.end) {

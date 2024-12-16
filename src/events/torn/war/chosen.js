@@ -53,6 +53,6 @@ module.exports = {
             })
             .setTimestamp();
 
-        //await channel.send({ embeds: [embed] });
+        await channel.send({ embeds: [embed] });
 	},
 };
