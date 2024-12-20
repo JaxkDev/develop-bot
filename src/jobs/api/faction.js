@@ -6,41 +6,40 @@ const { Client } = require('discord.js');
 
 const faction_selections = [
 	'basic',
-	'chainreport',
-	'chain',
-	'territory',
+	//'chainreport',
+	//'chain',
+	//'territory',
 	'rankedwars',
 	'timestamp',
-	'chains',
+	//'chains',
 	'members',
 	'wars',
-	'applications', //TODO Check this when there is actually an application
-	'armor',
-	'boosters',
-	'crimes',
-	'drugs',
-	'medical',
-	'revives',
-	'revivesfull', //TODO Check if this is needed if its like attacksfull, definitely not needed
-	'stats',
-	'temporary',
-	'upgrades',
-	'weapons',
-	'caches',
-	'crimeexp',
+	'applications',
+	//'armor',
+	//'boosters',
+	//'crimes', // Useless and empty due to from=timestamp
+	//'drugs',
+	//'medical',
+	//'revives',
+	//'revivesfull', //TODO Check if this is needed if its like attacksfull, definitely not needed
+	//'stats',
+	//'temporary',
+	//'upgrades',
+	//'weapons',
+	//'caches',
+	//'crimeexp', ??
 	'attacks',
 	//'attacksfull', // This is a lot of useless data more detailed is 'attacks' selection
-	'cesium',
-	'contributors',
-	'currency',
-	'donations',
-	'reports'
+	//'cesium', ??
+	//'contributors', ??
+	//'currency', ??
+	//'donations', ??
+	//'reports' ??
 ]
 const interval = 3; // seconds (max 59, see cron syntax)
 const url = `${getConfig().api}/faction?key=${process.env.TORN_KEY}&selections=` + faction_selections.join(',');
 
 if (!fs.existsSync('data/api/faction/attacks')) fs.mkdirSync('data/api/faction/attacks', { recursive: true });
-if (!fs.existsSync('data/api/faction/wars')) fs.mkdirSync('data/api/faction/wars', { recursive: true });
 if (!fs.existsSync('data/api/faction/raw')) fs.mkdirSync('data/api/faction/raw', { recursive: true });
 
 let cache = {
@@ -54,7 +53,7 @@ if (Object.keys(data).length === Object.keys(cache).length) cache = data;
 cache['init'] = false;
 
 
-// Run this every 3s
+// Run this every interval seconds
 module.exports = {
 	name: 'ApiFaction',
     cron: '*/' + interval.toString() + ' * * * * *',

@@ -81,8 +81,152 @@ function getAllAttacks(client, start, end) {
             };
         }
         logger.info('Got all ' + attacks.length.toString() + ' attacks during the war period ' + start.toString() + ' to ' + end.toString());
-        resolve(attacks);
+        resolve(attacks.reverse());
     });
+}
+
+/**
+ * @name FiveHundredLimitReport
+ * @description Generates a report of attacks and any voided attacks (after 500 score)
+ * @param {Client} Discord client.
+ * @param {{
+*  "war_id": Number,
+*  "start": EpochTimeStamp,
+*  "end": EpochTimeStamp,
+*  "target": Number,
+*  "winner": Number,
+*  "factions": [{
+*      "id": Number,
+*      "name": String,
+*      "score": Number,
+*      "chain": Number
+*  },
+*  {
+*      "id": Number,
+*      "name": String,
+*      "score": Number,
+*      "chain": Number
+*  }]
+* }} war War data from the Torn API.
+* @param {[{
+*  "id": Number,
+*  "code": String,
+*  "started": EpochTimeStamp,
+*  "ended": EpochTimeStamp,
+*  "attacker": {
+*    "id": Number,
+*    "name": String,
+*    "level": Number,
+*    "faction": {
+*      "id": Number,
+*      "name": String
+*    }
+*  } | null,
+*  "defender": {
+*    "id": Number,
+*    "name": String,
+*    "level": Number,
+*    "faction": {
+*      "id": Number,
+*      "name": String
+*    }
+*  },
+*  "result": "None" | "Attacked" | "Mugged" | "Hospitalized" | "Arrested" | "Looted" | "Lost" | "Stalemate" | "Assist" | "Escape" | "Timeout" | "Special" | "Bounty" | "Interrupted",
+*  "respect_gain": Number,
+*  "respect_loss": Number,
+*  "chain": Number,
+*  "is_stealthed": Boolean,
+*  "is_raid": Boolean,
+*  "is_ranked_war": Boolean,
+*  "modifiers": {
+*    "fair_fight": Number,
+*    "war": Number,
+*    "retaliation": Number,
+*    "group": Number,
+*    "overseas": Number,
+*    "chain": Number,
+*    "warlord": Number
+*  }
+* }]} attacks Raw attack data from the war period.
+* @param {Boolean} [force=false] Whether to force overwrite existing reports for this war.
+*/
+function FiveHundredLimitReport(client, war, attacks, force=false) {
+    const config = getConfig();
+    const war_id = war['war_id'];
+
+    if (!force) {
+        // Check if the report already exists
+        if (fs.existsSync(`data/reports/wars/${war_id.toString()}/500_limit_report.json`)) {
+            logger.warn('500 limit report already exists for war ID ' + war_id.toString() + '.');
+            return;
+        }
+    }
+
+    // Filter out only ranked wars successful attacks.
+    let filtered = attacks.filter(
+        attack => attack['is_ranked_war'] === true && (attack['result'] === 'Attacked' || attack['result'] === 'Mugged' || attack['result'] === 'Hospitalized')
+    );
+
+    // Generate report
+    let report = {
+            "war_id": war_id,
+            "timestamps": {
+                "start": war['start'] * 1000,
+                "end": war['end'] * 1000,
+                "report_generated": Date.now(),
+                "500_achieved_human": "",
+                "500_achieved": 0
+            },
+            "factions": war['factions'],
+            "members": {}
+    };
+
+    let score = 0;
+    let last = filtered[0];
+    for (const attack of filtered) {
+        const member = ((attack['defender']['faction']['id'] === config['faction']) ? 'defender' : 'attacker');
+
+        if (!(attack[member]['id'] in report['members'])) {
+            report['members'][attack[member]['id']] = {
+                "name": attack[member]['name'],
+                "level": attack[member]['level'],
+                "attacks": 0,
+                "attacks_voided": 0,
+                "attacks_total": 0,
+            };
+        }
+
+        if (member === 'attacker') {
+            if (last['started'] !== attack['started']) {
+                if (last['started'] >= attack['started']) {
+                    logger.error('NOT SORTED: Last attack started at ' + last['started'] + ' and current attack started at ' + attack['started']);
+                    // NOT SORTED
+                }
+                last = attack;
+            }
+            if (score < 500) {
+                report['members'][attack[member]['id']]['attacks'] += 1;
+            } else {
+                report['members'][attack[member]['id']]['attacks_voided'] += 1;
+            }
+            report['members'][attack[member]['id']]['attacks_total'] += 1;
+
+            score += attack['respect_gain'];
+            if (score >= 500 && score-attack['respect_gain'] < 500) {
+                report['timestamps']['500_achieved'] = attack['ended'];
+                report['timestamps']['500_achieved_human'] = new Date(attack['ended'] * 1000).toString();
+            }
+        }
+    }
+
+    // Save report to file
+    fs.writeFileSync(`data/reports/wars/${war_id.toString()}/500_limit_report.json`, JSON.stringify(report, null, 2));
+    logger.info('Saved 500 limit report to file for war ID ' + war_id.toString() + ' - data/reports/wars/' + war_id.toString() + '/500_limit_report.json');
+
+    // Send report to Discord
+    const channel = client.channels.cache.get(config['channels']['war-log']);
+    if (channel) channel.send({ content: bold(underline('500 limit report for war ID ' + war_id.toString())), files: [{ attachment: `data/reports/wars/${war_id.toString()}/500_limit_report.json`, name: '500_limit_report.json' }] });
+    else logger.warn('Failed to send 500 limit report for war ID ' + war_id.toString() + ' - channel not found.');
 }
 
 /**
@@ -441,6 +585,21 @@ async function generateAllReports(client, war, force=false) {
     }
 
     // Other reports.
+
+    if (war.winner === config.faction) {
+        logger.debug('Generating Won reports for war ID ' + war['war_id']);
+        // Won
+    } else {
+        logger.debug('Generating Lost reports for war ID ' + war['war_id']);
+        // Lost
+        try {
+            FiveHundredLimitReport(client, war, attacks, force);
+        } catch(err) {
+            logger.error('Failed to generate 500 limit report for war ID ' + war['war_id'], { error: err.toString() });
+            const channel = client.channels.cache.get(config['channels']['war-log']);
+            if (channel) channel.send({ content: 'Failed to generate 500 attack limit report for war ID ' + war['war_id'] + ' ' + userMention(config['owner_id']) + '.' });
+        }
+    }
 }
 
 module.exports = generateAllReports;

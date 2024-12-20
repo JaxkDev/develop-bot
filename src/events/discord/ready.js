@@ -2,6 +2,7 @@ const { Events, Client, Collection } = require('discord.js');
 const { getConfig } = require('../../config');
 const schedule = require('node-schedule');
 const logger = require('../../logger');
+const generateAllReports = require('../../scripts/reports/postWarReports');
 
 module.exports = {
 	event: Events.ClientReady,
@@ -35,5 +36,21 @@ module.exports = {
             client.jobs.set(job.name, j);
         }
         logger.debug('Jobs scheduled with scheduler.');
+
+        // let twar = {
+        //     factions: [
+        //       {id: 49924, name: 'OnlyXans Premium', score: 3430, chain: 0 },
+        //       {id: 51716, name: 'Develop (Hiring)', score: 575, chain: 0 }
+        //     ],
+        //     start: 1734120000, end: 1734287451, target: 2849, winner: 49924,
+        //     war_id: 20318
+        //   }
+        //   console.log(twar);
+        // try{
+        //     generateAllReports(client, twar, true);
+        // } catch(err) {
+        //     logger.error("Failed to gen report:", {'err': err.toString()})
+        // }
+        // console.log('done');
 	},
 };
