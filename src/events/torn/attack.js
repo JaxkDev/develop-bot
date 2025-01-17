@@ -56,7 +56,7 @@ module.exports = {
      * @see https://www.torn.com/swagger/index.html#/Stable/get_faction_attacks Torn API - Attacks
      */
 	async handle(client, attack) {
-        //return;
+        if (process.env.ENVIRONMENT !== "dev") return;
         const config = getConfig();
         if(channel === null) channel = client.channels.cache.get(config.channels['attack-log']);
 
