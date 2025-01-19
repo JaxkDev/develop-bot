@@ -56,7 +56,7 @@ function getAllAttacks(client, start, end) {
         // Get all attacks
         let url = config['api'] + '/faction?selections=attacks&from=' + start.toString() + '&to=' + end.toString();
         let length = 100;
-        let attacks = [];
+        let attacks = new Map();
         while(length === 100) {
             logger.debug('Fetching attacks from ' + url);
             url += '&key=' + process.env.TORN_KEY;
@@ -74,14 +74,18 @@ function getAllAttacks(client, start, end) {
                 }
                 length = data.length;
                 url = response.data["_metadata"]["links"]["prev"];
-                attacks = attacks.concat(response.data['attacks']);
+
+                for (const attack of data) {
+                    attacks.set(attack['id'], attack);
+                }
             } catch (err) {
                 logger.error('Failed to get attacks: ' + err, { error: err.toString() });
                 reject(err);
             };
         }
+        attacks = Array.from(attacks.values());
         logger.info('Got all ' + attacks.length.toString() + ' attacks during the war period ' + start.toString() + ' to ' + end.toString());
-        resolve(attacks.reverse());
+        resolve(attacks);
     });
 }
 
