@@ -80,8 +80,13 @@ module.exports = {
             .setLabel('Reply when Online')
             .setStyle(ButtonStyle.Secondary);
 
+        const Cancel = new ButtonBuilder()
+            .setCustomId('cancel')
+            .setLabel('Cancel')
+            .setStyle(ButtonStyle.Danger);
+
         const buttonRow = new ActionRowBuilder()
-            .addComponents(Processed, Rejected);
+            .addComponents(Processed, Rejected, Cancel);
 
         if (interaction.options.getString('when') === 'When Online') {
             buttonRow.addComponents(Reply);
@@ -98,8 +103,39 @@ module.exports = {
 
         // filter by treasurer role id against member roles
         // const hasRole = interaction.member.roles.cache.some(role => role.id === getConfig().roles.treasurer);
+
+        // filter by author id against interaction user id
+        const isAuthor = i => i.user.id === interaction.user.id;
+        const collector2 = embed_msg.createMessageComponentCollector({ componentType: ComponentType.Button, filter: isAuthor });
+
         const collectionFilter = i => i.member.roles.cache.some(role => role.id === getConfig().roles.treasurer);
         const collector = embed_msg.createMessageComponentCollector({ componentType: ComponentType.Button, filter: collectionFilter });
+
+        collector2.on('collect', async confirmation => {
+            if (confirmation.customId === 'cancel') {
+                await embed_msg.edit({
+                    embeds: [
+                        exampleEmbed
+                        .setColor(0xff0000)
+                        .addFields(
+                            { name: "Status", value: "Cancelled", inline: true },
+                            { name: "Cancelled By", value: confirmation.user.tag + " (" + userMention(confirmation.user.id)+")", inline: true },
+                            { name: "Cancelled At", value: new Date().toLocaleString(), inline: true }
+                        )
+                    ],
+                    components: []
+                });
+                await confirmation.reply({
+                    content: 'Request has been ' + bold('CANCELLED'),
+                    ephemeral: true
+                });
+            } else {
+                await confirmation.reply({
+                    content: 'A treasurer must respond to this request.',
+                    ephemeral: true
+                });
+            }
+        });
 
         collector.on('collect', async confirmation => {
             if (confirmation.customId === 'done') {
@@ -148,7 +184,7 @@ module.exports = {
                     content: 'You have asked the user to reply when online.',
                     ephemeral: true
                 });
-            } else {
+            } else if (confirmation.customId !== 'cancel') {
                 await confirmation.reply({
                     content: 'Invalid button clicked.',
                     ephemeral: true
