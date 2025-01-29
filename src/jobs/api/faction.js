@@ -46,7 +46,8 @@ let cache = {
 	"init": false, // This is to check if the cache is initialized, once true all data is current.
 	"timestamp": 0,
 	"war": {},
-	"attacks": []
+	"attacks": [],
+	"applications": []
 };
 let data = JSON.parse(fs.existsSync('data/api/faction/cache.dat') ? fs.readFileSync('data/api/faction/cache.dat', 'utf8') : JSON.stringify(cache));
 if (Object.keys(data).length === Object.keys(cache).length) cache = data;
@@ -121,6 +122,22 @@ module.exports = {
 				cache.war = war;
 			} else {
 				cache.war = {};
+			}
+
+
+			//// -- APPLICATIONS -- ////
+
+			const applications = data.applications ?? [];
+			for(const application of applications) {
+				const applicationId = application.id;
+				if (cache.applications.includes(applicationId.toString() + '-' + application.status)) {
+					//logger.debug(`Faction application data for application ID ${applicationId} is already processed.`);
+					continue;
+				}
+
+				client.emit('torn-application', application);
+				cache.applications.push(applicationId.toString() + '-' + application.status);
+				logger.debug(`Faction application data emitted for application ID ${applicationId}`);
 			}
 
 
