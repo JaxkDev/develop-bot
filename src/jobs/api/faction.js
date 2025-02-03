@@ -70,10 +70,16 @@ module.exports = {
 				throw new Error('Failed to fetch data from Torn API');
 			}
 
+			if(res.data.error) {
+				throw new Error(JSON.stringify(res.data.error));
+			}
+
 			const data = res.data;
 			const timestamp = data.timestamp;
 			logger.debug(`Faction data fetched with timestamp ${timestamp}`);
 			cache.timestamp = timestamp;
+
+			//fs.writeFileSync(`data/api/faction/raw/${timestamp}.dat`, JSON.stringify(data));
 
 			// Global torn data.
 			client.torn_data = data;
@@ -139,8 +145,6 @@ module.exports = {
 				cache.applications.push(applicationId.toString() + '-' + application.status);
 				logger.debug(`Faction application data emitted for application ID ${applicationId}`);
 			}
-
-
 
 			cache.init = true;
 			fs.writeFile('data/api/faction/cache.dat', JSON.stringify(cache), (err) => {if(err) logger.error(`Failed to write cache data`, {error: err})});
