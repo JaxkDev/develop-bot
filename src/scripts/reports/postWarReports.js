@@ -1,5 +1,5 @@
 const { getConfig } = require('../../config');
-const { Client, userMention, bold, underline } = require('discord.js');
+const { Client, userMention, bold, underline, hyperlink } = require('discord.js');
 const logger = require('../../logger');
 const axios = require('axios');
 const fs = require('fs');
@@ -83,7 +83,7 @@ function getAllAttacks(client, start, end) {
                 reject(err);
             };
         }
-        attacks = Array.from(attacks.values());
+        attacks = Array.from(attacks.values()).reverse();
         logger.info('Got all ' + attacks.length.toString() + ' attacks during the war period ' + start.toString() + ' to ' + end.toString());
         resolve(attacks);
     });
@@ -201,10 +201,10 @@ function FiveHundredLimitReport(client, war, attacks, force=false) {
         }
 
         if (member === 'attacker') {
-            if (last['started'] !== attack['started']) {
-                if (last['started'] >= attack['started']) {
-                    logger.error('NOT SORTED: Last attack started at ' + last['started'] + ' and current attack started at ' + attack['started']);
-                    // NOT SORTED
+            if (last['ended'] !== attack['ended']) {
+                if (last['ended'] >= attack['ended']) {
+                    logger.error('NOT SORTED: Last attack ended at ' + last['ended'] + ' and current attack ended at ' + attack['ended']);
+                    // NOT SORTED, SHOULD NOT HAPPEN, IF HAPPENS, API HAS CHANGED AND THIS CODE NEEDS TO BE UPDATED ASAP.
                 }
                 last = attack;
             }
@@ -435,9 +435,27 @@ function netReport(client, war, attacks, force=false) {
  * }]} attacks Raw attack data from the war period.
  * @param {Boolean} [force=false] Whether to force overwrite existing reports for this war.
 */
-function lossesReport(client, war, attacks, force=false) {
+async function lossesReport(client, war, attacks, force=false) {
     const config = getConfig();
     const war_id = war['war_id'];
+    
+    // get winner name
+    let winner = war['factions'][0]['id'] === war['winner'] ? war['factions'][0]['name'] : war['factions'][1]['name'];
+
+    const description = `
+This report contains all defends during the war period that were successful attacks on the faction.
+
+War: ${war_id} (${war['factions'][0]['name']} vs ${war['factions'][1]['name']})
+Score: ${war['factions'][0]['score']} - ${war['factions'][1]['score']}
+Winner: ${winner}
+
+Time start: ${new Date(war['start'] * 1000).toString()}
+Time end: ${new Date(war['end'] * 1000).toString()}
+`;
+
+    const name = war_id.toString() + ' - War losses';
+    const category = 1;
+    let data = [];
 
     if (!force) {
         // Check if the report already exists
@@ -458,20 +476,11 @@ function lossesReport(client, war, attacks, force=false) {
     logger.info('Saved all defends during the war period to file for faction ' + config['faction'] + ' - data/reports/wars/' + war_id.toString() + '/defends.json');
 
     // Generate report
-    let report = {
-            "war_id": war_id,
-            "timestamps": {
-                "start": war['start'] * 1000,
-                "end": war['end'] * 1000,
-                "report_generated": Date.now()
-            },
-            "factions": war['factions'],
-            "members": {}
-    };
+    let members = {};
 
     for (const attack of filtered) {
-        if (!(attack['defender']['id'] in report['members'])) {
-            report['members'][attack['defender']['id']] = {
+        if (!(attack['defender']['id'] in members)) {
+            members[attack['defender']['id']] = {
                 "name": attack['defender']['name'],
                 "level": attack['defender']['level'],
                 "losses": 0,
@@ -484,38 +493,52 @@ function lossesReport(client, war, attacks, force=false) {
                 }
             };
         }
-        report['members'][attack['defender']['id']]['losses'] += 1;
-        report['members'][attack['defender']['id']]['respect_they_gained'] += attack['respect_gain'];
+        members[attack['defender']['id']]['losses'] += 1;
+        members[attack['defender']['id']]['respect_they_gained'] += attack['respect_gain'];
         switch (attack['result'].toLowerCase()) {
             case 'attacked':
-                report['members'][attack['defender']['id']]['types']['attacked'] += 1;
+                members[attack['defender']['id']]['types']['attacked'] += 1;
                 break;
             case 'mugged':
-                report['members'][attack['defender']['id']]['types']['mugged'] += 1;
+                members[attack['defender']['id']]['types']['mugged'] += 1;
                 break;
             case 'hospitalized':
-                report['members'][attack['defender']['id']]['types']['hospitalized'] += 1;
+                members[attack['defender']['id']]['types']['hospitalized'] += 1;
                 break;
             default:
-                report['members'][attack['defender']['id']]['types']['other'] += 1;
+                members[attack['defender']['id']]['types']['other'] += 1;
         }
     }
 
-    // Round respect gained to 2 decimal places
-    for (const member in report['members']) {
-        report['members'][member]['respect_they_gained'] = Math.round(report['members'][member]['respect_they_gained'] * 100) / 100;
+    for (const member in members) {
+        // Round respect gained to 2 decimal places
+        members[member]['respect_they_gained'] = Math.round(members[member]['respect_they_gained'] * 100) / 100;
+        data.push({
+            "ID": member,
+            "Name": members[member]['name'],
+            "Level": members[member]['level'],
+            "Result: Attacked": members[member]['types']['attacked'],
+            "Result: Mugged": members[member]['types']['mugged'],
+            "Result: Hospitalized": members[member]['types']['hospitalized'],
+            "Result: Other": members[member]['types']['other'],
+            "Total Losses": members[member]['losses'],
+            "Respect They Gained": members[member]['respect_they_gained']
+        });
     }
 
     // Sort members by respect gained
-    //report['members'] = Object.fromEntries(Object.entries(report['members']).sort((a, b) => b[1]['losses'] - a[1]['losses']))
+    //members = Object.fromEntries(Object.entries(members).sort((a, b) => b[1]['losses'] - a[1]['losses']))
 
     // Save report to file
-    fs.writeFileSync(`data/reports/wars/${war_id.toString()}/losses.json`, JSON.stringify(report, null, 2));
+    fs.writeFileSync(`data/reports/wars/${war_id.toString()}/losses.json`, JSON.stringify(data, null, 2));
     logger.info('Saved war losses report to file for war ID ' + war_id.toString() + ' - data/reports/wars/' + war_id.toString() + '/losses.json');
+
+    // Send report to Web server
+    const url = await sendReports({ name, description, category, data });
 
     // Send report to Discord
     const channel = client.channels.cache.get(config['channels']['war-log']);
-    if (channel) channel.send({ content: bold(underline('War losses report for war ID ' + war_id.toString())), files: [{ attachment: `data/reports/wars/${war_id.toString()}/losses.json`, name: 'losses.json' }] });
+    if (channel) channel.send({ content: bold(underline('War losses report for war ID ' + war_id.toString())+'\n\n'+hyperlink('View report on dashboard', url))});
     else logger.warn('Failed to send war losses report for war ID ' + war_id.toString() + ' - channel not found.');
 }
 
@@ -604,6 +627,36 @@ async function generateAllReports(client, war, force=false) {
             if (channel) channel.send({ content: 'Failed to generate 500 attack limit report for war ID ' + war['war_id'] + ' ' + userMention(config['owner_id']) + '.' });
         }
     }
+}
+
+/**
+ * Sends reports to the dashboard server.
+ * 
+ * @param {
+ * "name": String,
+ * "description": String,
+ * "category": Number,
+ * "data": [{}]
+ * } reportData 
+ */
+async function sendReports(reportData) {
+    return new Promise(async (resolve, reject) => {
+        const url = 'https://torn.jaxkdev.net/internal/reports';
+        try {
+            const response = await axios.post(url, reportData, { headers: { 'Authorization': process.env.INTERNAL_TOKEN } });
+            if (response.status !== 200) {
+                logger.error('Failed to send reports to dashboard server: HTTP-' + response.status.toString());
+                reject('Failed to send reports to dashboard server: HTTP-' + response.status.toString());
+                return;
+            } else {
+                logger.info('Sent reports to dashboard server.');
+                resolve(response.data['report_url']);
+            }
+        } catch (err) {
+            logger.error('Failed to send reports to dashboard server: ' + err, { error: err.toString() });
+            reject(err);
+        }
+    });
 }
 
 module.exports = generateAllReports;
