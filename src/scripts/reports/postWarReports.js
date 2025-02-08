@@ -154,7 +154,7 @@ function getAllAttacks(client, start, end) {
 * }]} attacks Raw attack data from the war period.
 * @param {Boolean} [force=false] Whether to force overwrite existing reports for this war.
 */
-function FiveHundredLimitReport(client, war, attacks, force=false) {
+async function FiveHundredLimitReport(client, war, attacks, force=false) {
     const config = getConfig();
     const war_id = war['war_id'];
 
@@ -166,32 +166,43 @@ function FiveHundredLimitReport(client, war, attacks, force=false) {
         }
     }
 
+    let winner = war['factions'][0]['id'] === war['winner'] ? war['factions'][0]['name'] : war['factions'][1]['name'];
+
+    const description = `
+This report contains the attacks that were made during the war period that resulted in the faction reaching the 500 respect limit,
+and any attacks that were finished after the limit was reached have been voided.
+
+Note, this report only contains ranked wars and successful attacks on the faction and does not include any incomplete/failed attacks.
+
+War: ${war_id} [${war['factions'][0]['name']} vs ${war['factions'][1]['name']}]
+Score: ${war['factions'][0]['score']} - ${war['factions'][1]['score']}
+Winner: ${winner}
+
+500 Respect limit reached at: {{500_achieved_human}} [{{500_achieved}}]
+
+War start time: ${new Date(war['start'] * 1000).toString()}
+War end end: ${new Date(war['end'] * 1000).toString()}
+`;
+
+    const name = war_id.toString() + ' - War 500 limit report';
+    const category = 1;
+    let data = [];
+
     // Filter out only ranked wars successful attacks.
     let filtered = attacks.filter(
         attack => attack['is_ranked_war'] === true && (attack['result'] === 'Attacked' || attack['result'] === 'Mugged' || attack['result'] === 'Hospitalized')
     );
 
     // Generate report
-    let report = {
-            "war_id": war_id,
-            "timestamps": {
-                "start": war['start'] * 1000,
-                "end": war['end'] * 1000,
-                "report_generated": Date.now(),
-                "500_achieved_human": "",
-                "500_achieved": 0
-            },
-            "factions": war['factions'],
-            "members": {}
-    };
+    let members = {};
 
     let score = 0;
     let last = filtered[0];
     for (const attack of filtered) {
         const member = ((attack['defender']['faction']['id'] === config['faction']) ? 'defender' : 'attacker');
 
-        if (!(attack[member]['id'] in report['members'])) {
-            report['members'][attack[member]['id']] = {
+        if (!(attack[member]['id'] in members)) {
+            members[attack[member]['id']] = {
                 "name": attack[member]['name'],
                 "level": attack[member]['level'],
                 "attacks": 0,
@@ -209,27 +220,41 @@ function FiveHundredLimitReport(client, war, attacks, force=false) {
                 last = attack;
             }
             if (score < 500) {
-                report['members'][attack[member]['id']]['attacks'] += 1;
+                members[attack[member]['id']]['attacks'] += 1;
             } else {
-                report['members'][attack[member]['id']]['attacks_voided'] += 1;
+                members[attack[member]['id']]['attacks_voided'] += 1;
             }
-            report['members'][attack[member]['id']]['attacks_total'] += 1;
+            members[attack[member]['id']]['attacks_total'] += 1;
 
             score += attack['respect_gain'];
             if (score >= 500 && score-attack['respect_gain'] < 500) {
-                report['timestamps']['500_achieved'] = attack['ended'];
-                report['timestamps']['500_achieved_human'] = new Date(attack['ended'] * 1000).toString();
+                description.replace('{{500_achieved_human}}', new Date(attack['ended'] * 1000).toString());
+                description.replace('{{500_achieved}}', attack['ended'].toString());
             }
         }
     }
 
+    for (const member in members) {
+        data.push({
+            "ID": member,
+            "Name": members[member]['name'],
+            "Level": members[member]['level'],
+            "Attacks": members[member]['attacks'],
+            "Attacks Voided": members[member]['attacks_voided'],
+            "Total Attacks": members[member]['attacks_total']
+        });
+    }
+
     // Save report to file
-    fs.writeFileSync(`data/reports/wars/${war_id.toString()}/500_limit_report.json`, JSON.stringify(report, null, 2));
+    fs.writeFileSync(`data/reports/wars/${war_id.toString()}/500_limit_report.json`, JSON.stringify(data, null, 2));
     logger.info('Saved 500 limit report to file for war ID ' + war_id.toString() + ' - data/reports/wars/' + war_id.toString() + '/500_limit_report.json');
+
+    // Send report to Web server
+    const url = await sendReport({ name, description, category, data });
 
     // Send report to Discord
     const channel = client.channels.cache.get(config['channels']['war-log']);
-    if (channel) channel.send({ content: bold(underline('500 limit report for war ID ' + war_id.toString())), files: [{ attachment: `data/reports/wars/${war_id.toString()}/500_limit_report.json`, name: '500_limit_report.json' }] });
+    if (channel) channel.send({ content: bold(underline('500 limit report for war ID ' + war_id.toString())+'\n\n'+hyperlink('View report on dashboard', url))});
     else logger.warn('Failed to send 500 limit report for war ID ' + war_id.toString() + ' - channel not found.');
 }
 
@@ -298,7 +323,7 @@ function FiveHundredLimitReport(client, war, attacks, force=false) {
 * }]} attacks Raw attack data from the war period.
 * @param {Boolean} [force=false] Whether to force overwrite existing reports for this war.
 */
-function netReport(client, war, attacks, force=false) {
+async function netReport(client, war, attacks, force=false) {
     const config = getConfig();
     const war_id = war['war_id'];
 
@@ -310,28 +335,38 @@ function netReport(client, war, attacks, force=false) {
         }
     }
 
+    let winner = war['factions'][0]['id'] === war['winner'] ? war['factions'][0]['name'] : war['factions'][1]['name'];
+
+    const description = `
+This report contains all attacks / losses during the war period that were part of the war.
+
+Note, this report only contains ranked wars and successful attacks on the faction and does not include any voided/incomplete attacks.
+
+War: ${war_id} [${war['factions'][0]['name']} vs ${war['factions'][1]['name']}]
+Score: ${war['factions'][0]['score']} - ${war['factions'][1]['score']}
+Winner: ${winner}
+
+War start time: ${new Date(war['start'] * 1000).toString()}
+War end end: ${new Date(war['end'] * 1000).toString()}
+`;
+
+    const name = war_id.toString() + ' - War net attacks';
+    const category = 1;
+    let data = [];
+
     // Filter out only ranked wars successful attacks.
     let filtered = attacks.filter(
         attack => attack['is_ranked_war'] === true && (attack['result'] === 'Attacked' || attack['result'] === 'Mugged' || attack['result'] === 'Hospitalized')
     );
 
     // Generate report
-    let report = {
-            "war_id": war_id,
-            "timestamps": {
-                "start": war['start'] * 1000,
-                "end": war['end'] * 1000,
-                "report_generated": Date.now()
-            },
-            "factions": war['factions'],
-            "members": {}
-    };
+    let members = {};
 
     for (const attack of filtered) {
         const member = ((attack['defender']['faction']['id'] === config['faction']) ? 'defender' : 'attacker');
 
-        if (!(attack[member]['id'] in report['members'])) {
-            report['members'][attack[member]['id']] = {
+        if (!(attack[member]['id'] in members)) {
+            members[attack[member]['id']] = {
                 "name": attack[member]['name'],
                 "level": attack[member]['level'],
                 "attacks": 0,
@@ -344,29 +379,44 @@ function netReport(client, war, attacks, force=false) {
         }
 
         if (member === 'defender') {
-            report['members'][attack[member]['id']]['losses'] += 1;
-            report['members'][attack[member]['id']]['respect_they_gained'] += attack['respect_gain'];
+            members[attack[member]['id']]['losses'] += 1;
+            members[attack[member]['id']]['respect_they_gained'] += attack['respect_gain'];
         } else {
-            report['members'][attack[member]['id']]['attacks'] += 1;
-            report['members'][attack[member]['id']]['respect_we_gained'] += attack['respect_gain'];
+            members[attack[member]['id']]['attacks'] += 1;
+            members[attack[member]['id']]['respect_we_gained'] += attack['respect_gain'];
         }
     }
 
     // Round respect gained to 2 decimal places
-    for (const member in report['members']) {
-        report['members'][member]['respect_we_gained'] = Math.round(report['members'][member]['respect_we_gained'] * 100) / 100;
-        report['members'][member]['respect_they_gained'] = Math.round(report['members'][member]['respect_they_gained'] * 100) / 100;
-        report['members'][member]['net_respect_gained'] = Math.round((report['members'][member]['respect_we_gained'] - report['members'][member]['respect_they_gained']) * 100) / 100;
-        report['members'][member]['net_attacks'] = report['members'][member]['attacks'] - report['members'][member]['losses'];
+    for (const member in members) {
+        members[member]['respect_we_gained'] = Math.round(members[member]['respect_we_gained'] * 100) / 100;
+        members[member]['respect_they_gained'] = Math.round(members[member]['respect_they_gained'] * 100) / 100;
+        members[member]['net_respect_gained'] = Math.round((members[member]['respect_we_gained'] - members[member]['respect_they_gained']) * 100) / 100;
+        members[member]['net_attacks'] = members[member]['attacks'] - members[member]['losses'];
+
+        data.push({
+            "ID": member,
+            "Name": members[member]['name'],
+            "Level": members[member]['level'],
+            "Attacks": members[member]['attacks'],
+            "Respect We Gained": members[member]['respect_we_gained'],
+            "Losses": members[member]['losses'],
+            "Respect They Gained": members[member]['respect_they_gained'],
+            "Net Attacks": members[member]['net_attacks'],
+            "Net Respect Gained": members[member]['net_respect_gained']
+        });
     }
 
     // Save report to file
-    fs.writeFileSync(`data/reports/wars/${war_id.toString()}/net_report.json`, JSON.stringify(report, null, 2));
+    fs.writeFileSync(`data/reports/wars/${war_id.toString()}/net_report.json`, JSON.stringify(data, null, 2));
     logger.info('Saved net attacks report to file for war ID ' + war_id.toString() + ' - data/reports/wars/' + war_id.toString() + '/net_report.json');
+
+    // Send report to Web server
+    const url = await sendReport({ name, description, category, data });
 
     // Send report to Discord
     const channel = client.channels.cache.get(config['channels']['war-log']);
-    if (channel) channel.send({ content: bold(underline('Net attacks report for war ID ' + war_id.toString())), files: [{ attachment: `data/reports/wars/${war_id.toString()}/net_report.json`, name: 'net_report.json' }] });
+    if (channel) channel.send({ content: bold(underline('Net attacks report for war ID ' + war_id.toString())+'\n\n'+hyperlink('View report on dashboard', url))});
     else logger.warn('Failed to send net attacks report for war ID ' + war_id.toString() + ' - channel not found.');
 }
 
@@ -534,7 +584,7 @@ Time end: ${new Date(war['end'] * 1000).toString()}
     logger.info('Saved war losses report to file for war ID ' + war_id.toString() + ' - data/reports/wars/' + war_id.toString() + '/losses.json');
 
     // Send report to Web server
-    const url = await sendReports({ name, description, category, data });
+    const url = await sendReport({ name, description, category, data });
 
     // Send report to Discord
     const channel = client.channels.cache.get(config['channels']['war-log']);
@@ -595,7 +645,7 @@ async function generateAllReports(client, war, force=false) {
 
     // Generate war losses report
     try {
-        lossesReport(client, war, attacks, force);
+        await lossesReport(client, war, attacks, force);
     } catch(err) {
         logger.error('Failed to generate war losses report for war ID ' + war['war_id'], { error: err.toString() });
         const channel = client.channels.cache.get(config['channels']['war-log']);
@@ -604,7 +654,7 @@ async function generateAllReports(client, war, force=false) {
 
     // Generate net attacks report
     try {
-        netReport(client, war, attacks, force);
+        await netReport(client, war, attacks, force);
     } catch(err) {
         logger.error('Failed to generate net attacks report for war ID ' + war['war_id'], { error: err.toString() });
         const channel = client.channels.cache.get(config['channels']['war-log']);
@@ -620,7 +670,7 @@ async function generateAllReports(client, war, force=false) {
         logger.debug('Generating Lost reports for war ID ' + war['war_id']);
         // Lost
         try {
-            FiveHundredLimitReport(client, war, attacks, force);
+            await FiveHundredLimitReport(client, war, attacks, force);
         } catch(err) {
             logger.error('Failed to generate 500 limit report for war ID ' + war['war_id'], { error: err.toString() });
             const channel = client.channels.cache.get(config['channels']['war-log']);
@@ -639,7 +689,7 @@ async function generateAllReports(client, war, force=false) {
  * "data": [{}]
  * } reportData 
  */
-async function sendReports(reportData) {
+async function sendReport(reportData) {
     return new Promise(async (resolve, reject) => {
         const url = 'https://torn.jaxkdev.net/internal/reports';
         try {
