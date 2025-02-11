@@ -37,20 +37,19 @@ module.exports = {
         }
         logger.debug('Jobs scheduled with scheduler.');
 
-        // let twar = {
-        //     factions: [
-        //       {id: 49924, name: 'OnlyXans Premium', score: 3430, chain: 0 },
-        //       {id: 51716, name: 'Develop (Hiring)', score: 575, chain: 0 }
-        //     ],
-        //     start: 1734120000, end: 1734287451, target: 2849, winner: 49924,
-        //     war_id: 20318
-        //   }
-        //   console.log(twar);
-        // try{
-        //     generateAllReports(client, twar, true);
-        // } catch(err) {
-        //     logger.error("Failed to gen report:", {'err': err.toString()})
-        // }
-        // console.log('done');
+        let twar = {
+            factions: [
+              {id: 8869, name: 'Bendetti', score: 4393, chain: 0 },
+              {id: 51716, name: 'Develop (Hiring)', score: 3896, chain: 0 }
+            ],
+            start: 1738861200, end: 1739257200, target: 497, winner: 8869,
+            war_id: 22005
+        }
+        try{
+            generateAllReports(client, twar, true);
+        } catch(err) {
+            logger.error("Failed to gen report:", {'err': err.toString()})
+        }
+        console.log('done');
 	},
 };
